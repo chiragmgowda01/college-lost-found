@@ -22,12 +22,12 @@ function PostItem() {
   const [preview, setPreview] = useState("");
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const typeFromQuery = searchParams.get("type");
-    if (typeFromQuery === "lost" || typeFromQuery === "found") {
-      setForm((prev) => ({ ...prev, type: typeFromQuery }));
-    }
-  }, [location.search]);
+ useEffect(() => {
+  const typeFromQuery = searchParams.get("type");
+  if (typeFromQuery === "lost" || typeFromQuery === "found") {
+    setForm((prev) => ({ ...prev, type: typeFromQuery }));
+  }
+}, [searchParams]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
