@@ -5,7 +5,6 @@ import { addItem } from "../utils/storage";
 function PostItem() {
   const navigate = useNavigate();
   const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
 
   const [form, setForm] = useState({
     title: "",
@@ -15,19 +14,21 @@ function PostItem() {
     date: new Date().toISOString().slice(0, 10),
     reporter: "",
     phone: "",
-    type: searchParams.get("type") || "lost",
+    type: "lost",
     image: "",
   });
 
   const [preview, setPreview] = useState("");
   const [error, setError] = useState("");
 
- useEffect(() => {
-  const typeFromQuery = searchParams.get("type");
-  if (typeFromQuery === "lost" || typeFromQuery === "found") {
-    setForm((prev) => ({ ...prev, type: typeFromQuery }));
-  }
-}, [searchParams]);
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const typeFromQuery = params.get("type");
+
+    if (typeFromQuery === "lost" || typeFromQuery === "found") {
+      setForm((prev) => ({ ...prev, type: typeFromQuery }));
+    }
+  }, [location.search]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
