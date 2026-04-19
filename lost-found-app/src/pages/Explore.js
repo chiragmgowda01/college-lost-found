@@ -1,51 +1,51 @@
-import React, { useMemo, useState } from "react";
-import ItemCard from "../components/ItemCard";
-import { getItems } from "../utils/storage";
+import React, { useEffect, useState } from "react";
+import { db } from "../firebase";
+import { ref, onValue, update } from "firebase/database";
 
 function Explore() {
-  const [search, setSearch] = useState("");
-  const [type, setType] = useState("all");
+  const [items, setItems] = useState([]);
 
-  const items = getItems();
+  useEffect(() => {
+    const itemsRef = ref(db, "items");
 
-  const filtered = useMemo(() => {
-    return items.filter((item) => {
-      const matchesType = type === "all" ? true : item.type === type;
-      const text = `${item.title} ${item.description} ${item.category} ${item.location} ${item.reporter}`
-        .toLowerCase();
-      const matchesSearch = text.includes(search.toLowerCase());
-      return matchesType && matchesSearch;
+    onValue(itemsRef, (snapshot) => {
+      const data = snapshot.val();
+      const list = [];
+
+      for (let id in data) {
+        list.push({ id, ...data[id] });
+      }
+
+      setItems(list.reverse());
     });
-  }, [items, search, type]);
+  }, []);
+
+  const resolveItem = async (id) => {
+    await update(ref(db, "items/" + id), {
+      status: "resolved"
+    });
+  };
 
   return (
-    <div className="page-wrap">
-      <div className="section-heading">
-        <h2>Explore Reports</h2>
-      </div>
+    <div>
+      <h2>All Items</h2>
 
-      <div className="filter-bar">
-        <input
-          type="text"
-          placeholder="Search by title, category, location, reporter..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      {items.map((item) => (
+        <div key={item.id} style={{ border: "1px solid gray", margin: 10 }}>
+          <h3>{item.title}</h3>
+          <p>{item.description}</p>
+          <p>{item.type}</p>
+          <p>{item.location}</p>
+          <p>{item.phone}</p>
+          <p>Status: {item.status}</p>
 
-        <select value={type} onChange={(e) => setType(e.target.value)}>
-          <option value="all">All</option>
-          <option value="lost">Lost</option>
-          <option value="found">Found</option>
-        </select>
-      </div>
-
-      <div className="cards-grid">
-        {filtered.length > 0 ? (
-          filtered.map((item) => <ItemCard key={item.id} item={item} />)
-        ) : (
-          <div className="empty-state">No matching reports found.</div>
-        )}
-      </div>
+          {item.status !== "resolved" && (
+            <button onClick={() => resolveItem(item.id)}>
+              Mark Resolved
+            </button>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
