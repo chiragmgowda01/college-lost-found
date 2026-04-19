@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { db } from "../firebase";
-import { ref, push } from "firebase/database";
+import { addItem } from "../utils/storage";
 
 function PostItem() {
   const navigate = useNavigate();
@@ -33,13 +32,11 @@ function PostItem() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
     if (name === "phone") {
       const onlyDigits = value.replace(/\D/g, "").slice(0, 10);
       setForm((prev) => ({ ...prev, phone: onlyDigits }));
       return;
     }
-
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -52,54 +49,98 @@ function PostItem() {
     setForm((prev) => ({ ...prev, image: url }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
 
     if (!/^[6-9]\d{9}$/.test(form.phone)) {
-      setError("Enter a valid 10-digit Indian number.");
+      setError("Enter a valid 10-digit Indian number starting with 6–9.");
       return;
     }
 
-    if (!form.title || !form.location || !form.reporter) {
-      setError("Fill all required fields.");
+    if (!form.title.trim() || !form.location.trim() || !form.reporter.trim()) {
+      setError("Fill title, location, and reporter name.");
       return;
     }
 
-    await push(ref(db, "items"), {
+    addItem({
+      id: Date.now(),
       ...form,
-      phone: "+91" + form.phone,
-      status: "open",
-      createdAt: Date.now()
+      contact: `+91${form.phone}`,
+      createdAt: new Date().toISOString(),
+      resolved: false,
     });
 
-    alert("Report posted successfully!");
+    alert("Report posted successfully.");
     navigate("/explore");
   };
 
   return (
     <div className="page-wrap">
       <div className="form-card">
-        <h2>Post Item</h2>
+        <div className="section-heading">
+          <h2>Post a Report</h2>
+          <span className="muted">Lost or found? Share it here.</span>
+        </div>
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
+        {error && <div className="error-box">{error}</div>}
 
-        <form onSubmit={handleSubmit}>
-          <input name="title" placeholder="Title" onChange={handleChange} />
-          <textarea name="description" placeholder="Description" onChange={handleChange} />
+        <form className="premium-form" onSubmit={handleSubmit}>
+          <div className="two-col">
+            <input name="title" placeholder="Item title" value={form.title} onChange={handleChange} />
+            <select name="type" value={form.type} onChange={handleChange}>
+              <option value="lost">Lost</option>
+              <option value="found">Found</option>
+            </select>
+          </div>
 
-          <select name="type" onChange={handleChange}>
-            <option value="lost">Lost</option>
-            <option value="found">Found</option>
-          </select>
+          <textarea
+            name="description"
+            placeholder="Describe the item, color, markings, where you saw it..."
+            rows="4"
+            value={form.description}
+            onChange={handleChange}
+          />
 
-          <input name="location" placeholder="Location" onChange={handleChange} />
-          <input name="reporter" placeholder="Your Name" onChange={handleChange} />
-          <input name="phone" placeholder="Phone" onChange={handleChange} />
+          <div className="two-col">
+            <select name="category" value={form.category} onChange={handleChange}>
+              <option>ID Card</option>
+              <option>Wallet</option>
+              <option>Phone</option>
+              <option>Book</option>
+              <option>Bag</option>
+              <option>Keys</option>
+              <option>Other</option>
+            </select>
+            <input name="location" placeholder="Location" value={form.location} onChange={handleChange} />
+          </div>
 
-          <input type="file" onChange={handleImage} />
-          {preview && <img src={preview} alt="preview" width="100" />}
+          <div className="two-col">
+            <input name="date" type="date" value={form.date} onChange={handleChange} />
+            <input name="reporter" placeholder="Reporter name" value={form.reporter} onChange={handleChange} />
+          </div>
 
-          <button type="submit">Submit</button>
+          <div className="phone-wrap">
+            <span className="country-code">+91</span>
+            <input
+              name="phone"
+              placeholder="10-digit mobile number"
+              value={form.phone}
+              onChange={handleChange}
+              inputMode="numeric"
+            />
+          </div>
+
+          <input type="file" accept="image/*" onChange={handleImage} />
+          {preview && <img src={preview} alt="Preview" className="image-preview" />}
+
+          <div className="form-actions">
+            <button type="button" className="ghost-btn" onClick={() => navigate("/")}>
+              Cancel
+            </button>
+            <button type="submit" className="primary-btn">
+              Submit Report
+            </button>
+          </div>
         </form>
       </div>
     </div>
